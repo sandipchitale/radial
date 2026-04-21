@@ -219,17 +219,17 @@ function render(): void {
     <div id="stage" class="flex h-screen w-screen items-center justify-center">
       <div
         id="surface"
-        class="relative no-drag"
+        class="relative"
         style="width:${SIZE}px;height:${SIZE}px;"
       >
         <svg
-          class="radial-svg absolute inset-0 no-drag"
+          class="radial-svg absolute inset-0"
           width="${SIZE}" height="${SIZE}"
           viewBox="0 0 ${SIZE} ${SIZE}"
         >
           <!-- Trigger Ring: The menu starting point -->
           <circle
-            class="no-drag trigger-ring"
+            class="trigger-ring"
             cx="${CENTER}" cy="${CENTER}" r="${trMid}" stroke-width="${RING_THICKNESS}"
           >
             <title>Menu</title>
@@ -246,7 +246,7 @@ function render(): void {
             <title>Drag to move</title>
           </circle>
         </svg>
-        <div class="icon-layer no-drag">
+        <div class="icon-layer">
           ${iconGroups}
         </div>
       </div>

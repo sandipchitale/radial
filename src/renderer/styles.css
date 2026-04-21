@@ -7,10 +7,6 @@
   -webkit-user-select: none;
 }
 
-.no-drag {
-  -webkit-app-region: no-drag;
-}
-
 /* ───────── Light theme (default) ───────── */
 :root {
   --arc-fill: rgba(255, 255, 255, 1.0);
