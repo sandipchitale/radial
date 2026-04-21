@@ -59,33 +59,28 @@ const ROOT: MenuItem[] = [
 // ───────── Geometry ─────────
 const SIZE = 760
 const CENTER = SIZE / 2
-const CENTER_RADIUS = 40       // inner disc
-const KNURL_R = 56             // drag band centerline
-const KNURL_W = 24             // drag band stroke width (wider for easier grab)
-const GAP = 10                 // transparent gap between rings
-const RING_THICKNESS = 68
+const CENTER_RADIUS = 16       // much smaller blue handle
+const TRIGGER_INNER = 28       // 12px gap from the 16px center handle
+const GAP = 12                 // thinner, uniform gap between rings
+const RING_THICKNESS = 64      // identical width for ALL rings
 
 function ringInner(level: number): number {
-  // level 0 = first ring outside the center disc
-  // Starts after the drag band (KNURL_R + KNURL_W/2) + gap
-  return (KNURL_R + KNURL_W / 2) + GAP + level * (RING_THICKNESS + GAP)
+  // level -1 = Trigger Ring (first ring)
+  // level 0 = ROOT command ring (second ring)
+  if (level === -1) return TRIGGER_INNER
+  // Subsequent rings start after the trigger ring + n*(thickness + gap)
+  return TRIGGER_INNER + (level + 1) * (RING_THICKNESS + GAP)
 }
 function ringOuter(level: number): number {
   return ringInner(level) + RING_THICKNESS
 }
 
 // ───────── State ─────────
-// rootOpen: when false only the center disc is drawn; true exposes the root ring.
-// breadcrumb tracks which folders are drilled into beyond root.
+// rootOpen: when false only the center disc + trigger ring are drawn
 let rootOpen = false
 const breadcrumb: MenuItem[] = []
-// How many rings were on-screen at the previous render. Used to tell
-// "new ring just appeared" (animate) from "same / fewer rings" (instant).
+// How many rings were on-screen at the previous render.
 let prevDepth = 0
-// Keyboard focus: which wedge (if any) should receive focus after render.
-// -1 means "no wedge focused" — center gets focus instead.
-let focusedLevel = -1
-let focusedIndex = 0
 
 // ───────── Theme ─────────
 type ThemeMode = 'light' | 'dark' | 'auto'
@@ -118,6 +113,7 @@ matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
 // ───────── SVG helpers ─────────
 function polar(cx: number, cy: number, r: number, angleDeg: number): [number, number] {
   const a = (angleDeg - 90) * Math.PI / 180
+
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
 }
 
@@ -214,71 +210,61 @@ function render(): void {
     return `<div class="${cls}" data-r-in="${rIn}" data-r-out="${rOut}">${ics.join('')}</div>`
   }).join('\n')
 
+  // Trigger Ring (Level -1) geometry
+  const trIn = ringInner(-1)
+  const trOut = ringOuter(-1)
+  const trMid = (trIn + trOut) / 2
+
   appEl.innerHTML = `
     <div id="stage" class="flex h-screen w-screen items-center justify-center">
       <div
         id="surface"
-        class="relative"
+        class="relative no-drag"
         style="width:${SIZE}px;height:${SIZE}px;"
       >
         <svg
-          class="radial-svg absolute inset-0"
+          class="radial-svg absolute inset-0 no-drag"
           width="${SIZE}" height="${SIZE}"
           viewBox="0 0 ${SIZE} ${SIZE}"
         >
-          ${svgGroups}
-          <!-- Draggable band: capture mousedown for JS dragging. -->
+          <!-- Trigger Ring: The menu starting point -->
           <circle
-            class="drag-band"
-            cx="${CENTER}" cy="${CENTER}" r="${KNURL_R}" stroke-width="${KNURL_W}"
-            fill="none" stroke="var(--drag-band-fill)"
-            style="pointer-events:all;"
+            class="no-drag trigger-ring"
+            cx="${CENTER}" cy="${CENTER}" r="${trMid}" stroke-width="${RING_THICKNESS}"
           >
-            <title>Drag to move</title>
+            <title>Menu</title>
           </circle>
+
+          ${svgGroups}
+
+          <!-- Center Handle: Dedicated to dragging -->
           <circle
-            class="center-disc"
-            tabindex="0"
+            class="center-disc drag"
             cx="${CENTER}" cy="${CENTER}" r="${CENTER_RADIUS}"
             id="center"
           >
-            <title>~/.radial</title>
+            <title>Drag to move</title>
           </circle>
         </svg>
-        <div class="icon-layer">
+        <div class="icon-layer no-drag">
           ${iconGroups}
-          <div
-            class="icon-label center"
-            style="left:${CENTER}px;top:${CENTER}px;"
-          >
-            <i class="fas fa-gear"></i>
-          </div>
         </div>
       </div>
     </div>
   `
 
-  // ───────── Dragging logic ─────────
-  const dragBand = appEl.querySelector('.drag-band') as SVGCircleElement
-  if (dragBand) {
-    dragBand.addEventListener('mousedown', (e) => {
-      window.radial.dragStart()
-      e.preventDefault()
-      e.stopPropagation()
-    })
-  }
-
-  // ───────── Event Delegation ─────────
+  // Wire events
   appEl.querySelectorAll<SVGPathElement>('path.wedge').forEach((el) => {
     el.addEventListener('click', onWedgeClick)
   })
-  appEl.querySelector<SVGCircleElement>('#center')?.addEventListener('click', onCenterClick)
+  appEl.querySelector<SVGCircleElement>('.trigger-ring')?.addEventListener('click', onTriggerClick)
 }
 
-// ───────── Global Window Events ─────────
-window.addEventListener('mouseup', () => {
-  window.radial.dragStop()
-})
+function onTriggerClick(): void {
+  rootOpen = !rootOpen
+  if (!rootOpen) breadcrumb.length = 0
+  render()
+}
 
 function findItem(level: number, id: string): MenuItem | undefined {
   const levels: MenuItem[][] = [ROOT]
@@ -335,22 +321,6 @@ function collapseToCenter(): void {
   breadcrumb.length = 0
   rootOpen = false
   render()
-}
-
-function onCenterClick(): void {
-  if (breadcrumb.length > 0) {
-    // collapse submenus but keep root ring open
-    breadcrumb.length = 0
-    render()
-  } else if (rootOpen) {
-    // collapse root ring → only center shown
-    rootOpen = false
-    render()
-  } else {
-    // from collapsed state, click opens root ring
-    rootOpen = true
-    render()
-  }
 }
 
 function escapeHtml(s: string): string {

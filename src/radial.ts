@@ -190,52 +190,6 @@ app.whenReady().then(() => {
 
 ipcMain.on('radial:hide', hideWindow)
 ipcMain.on('radial:quit', () => app.quit())
-
-let dragInterval: NodeJS.Timeout | null = null
-ipcMain.on('radial:drag-start', (event) => {
-    const browserWindow = BrowserWindow.fromWebContents(event.sender)
-    if (!browserWindow) return
-
-    const startMousePos = screen.getCursorScreenPoint()
-    const startWinPos = browserWindow.getPosition()
-
-    if (dragInterval) clearInterval(dragInterval)
-    dragInterval = setInterval(() => {
-        if (browserWindow.isDestroyed()) {
-            clearInterval(dragInterval!)
-            return
-        }
-        const currentMousePos = screen.getCursorScreenPoint()
-        const dx = currentMousePos.x - startMousePos.x
-        const dy = currentMousePos.y - startMousePos.y
-        browserWindow.setPosition(startWinPos[0] + dx, startWinPos[1] + dy)
-    }, 16) // ~60fps
-})
-
-ipcMain.on('radial:drag-stop', () => {
-    if (dragInterval) {
-        clearInterval(dragInterval)
-        dragInterval = null
-    }
-})
-
-ipcMain.handle('radial:get-pos', () => {
-    if (win && !win.isDestroyed()) {
-        const [x, y] = win.getPosition()
-        return { x, y }
-    }
-    return { x: 0, y: 0 }
-})
-ipcMain.on('radial:move', (_e, { x, y }: { x: number; y: number }) => {
-    if (win && !win.isDestroyed()) {
-        win.setBounds({
-            x: Math.round(x),
-            y: Math.round(y),
-            width: WIN_SIZE,
-            height: WIN_SIZE
-        })
-    }
-})
 ipcMain.on('radial:launch', (_e, appId: string) => {
     launchApp(appId)
 })

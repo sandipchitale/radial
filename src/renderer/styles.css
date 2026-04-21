@@ -1,24 +1,14 @@
 @import "tailwindcss";
 @import "@fortawesome/fontawesome-free/css/all.min.css";
 
-html,
-body,
-#app {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: transparent !important;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
+.drag {
+  -webkit-app-region: drag;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.drag-band {
-  cursor: grab;
-  outline: none;
-  pointer-events: auto;
-}
-.drag-band:active {
-  cursor: grabbing;
+.no-drag {
+  -webkit-app-region: no-drag;
 }
 
 /* ───────── Light theme (default) ───────── */
@@ -29,14 +19,15 @@ body,
   --arc-fill-active: rgba(56, 189, 248, 1.0);
   --arc-icon: #0c4a6e;
   --arc-icon-hover: #082f49;
-  --center-fill: rgba(255, 255, 255, 1.0);
-  --center-stroke: rgba(255, 255, 255, 1.0);
+  --center-fill: #93e2ff;
+  --center-stroke: #93e2ff;
   --center-icon: #0c4a6e;
-  --drag-band-fill: rgba(120, 132, 150, 1.0);
+  --trigger-fill: #f1f5f9;
+  --trigger-stroke: #f1f5f9;
   --ring-0-bg: rgba(235, 235, 235, 1.0);
   --ring-1-bg: rgba(220, 220, 220, 1.0);
   --ring-2-bg: rgba(205, 205, 205, 1.0);
-  --shadow: 0 8px 28px rgba(15, 23, 42, 0.25);
+  --shadow: 0 16px 48px rgba(15, 23, 42, 0.12);
 }
 
 /* ───────── Dark theme ───────── */
@@ -47,14 +38,15 @@ body,
   --arc-fill-active: rgba(14, 165, 233, 1.0);
   --arc-icon: #e0f2fe;
   --arc-icon-hover: #082f49;
-  --center-fill: rgba(15, 23, 42, 1.0);
-  --center-stroke: rgba(30, 41, 59, 1.0);
+  --center-fill: #38bdf8;
+  --center-stroke: #38bdf8;
   --center-icon: #e0f2fe;
-  --drag-band-fill: rgba(71, 85, 105, 1.0);
+  --trigger-fill: #1e293b;
+  --trigger-stroke: #1e293b;
   --ring-0-bg: rgba(15, 23, 42, 1.0);
   --ring-1-bg: rgba(10, 15, 30, 1.0);
   --ring-2-bg: rgba(5, 10, 20, 1.0);
-  --shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
 .radial-svg {
@@ -70,10 +62,21 @@ body,
 .ring-track-1 { stroke: var(--ring-1-bg); }
 .ring-track-2 { stroke: var(--ring-2-bg); }
 
+.trigger-ring {
+  fill: none;
+  stroke: var(--trigger-fill);
+  cursor: pointer;
+  transition: stroke 180ms ease;
+  outline: none;
+}
+.trigger-ring:hover {
+  stroke: var(--arc-fill-hover);
+}
+
 .wedge {
   fill: var(--arc-fill);
   stroke: var(--arc-stroke);
-  stroke-width: 1.5;
+  stroke-width: 0;
   transition: fill 180ms ease, transform 180ms ease;
   cursor: pointer;
   transform-box: fill-box;
@@ -93,9 +96,8 @@ body,
 .center-disc {
   fill: var(--center-fill);
   stroke: var(--center-stroke);
-  stroke-width: 1.5;
-  cursor: pointer;
-  transition: fill 180ms ease;
+  stroke-width: 0;
+  cursor: move;
   outline: none;
   pointer-events: auto;
 }
