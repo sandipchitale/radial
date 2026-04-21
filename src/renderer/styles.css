@@ -1,0 +1,160 @@
+@import "tailwindcss";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: transparent !important;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+}
+
+.drag-band {
+  cursor: grab;
+  outline: none;
+  pointer-events: auto;
+}
+.drag-band:active {
+  cursor: grabbing;
+}
+
+/* ───────── Light theme (default) ───────── */
+:root {
+  --arc-fill: rgba(255, 255, 255, 1.0);
+  --arc-stroke: rgba(255, 255, 255, 1.0);
+  --arc-fill-hover: rgba(125, 211, 252, 1.0);
+  --arc-fill-active: rgba(56, 189, 248, 1.0);
+  --arc-icon: #0c4a6e;
+  --arc-icon-hover: #082f49;
+  --center-fill: rgba(255, 255, 255, 1.0);
+  --center-stroke: rgba(255, 255, 255, 1.0);
+  --center-icon: #0c4a6e;
+  --drag-band-fill: rgba(120, 132, 150, 1.0);
+  --ring-0-bg: rgba(235, 235, 235, 1.0);
+  --ring-1-bg: rgba(220, 220, 220, 1.0);
+  --ring-2-bg: rgba(205, 205, 205, 1.0);
+  --shadow: 0 8px 28px rgba(15, 23, 42, 0.25);
+}
+
+/* ───────── Dark theme ───────── */
+.dark {
+  --arc-fill: rgba(30, 41, 59, 1.0);
+  --arc-stroke: rgba(15, 23, 42, 1.0);
+  --arc-fill-hover: rgba(56, 189, 248, 1.0);
+  --arc-fill-active: rgba(14, 165, 233, 1.0);
+  --arc-icon: #e0f2fe;
+  --arc-icon-hover: #082f49;
+  --center-fill: rgba(15, 23, 42, 1.0);
+  --center-stroke: rgba(30, 41, 59, 1.0);
+  --center-icon: #e0f2fe;
+  --drag-band-fill: rgba(71, 85, 105, 1.0);
+  --ring-0-bg: rgba(15, 23, 42, 1.0);
+  --ring-1-bg: rgba(10, 15, 30, 1.0);
+  --ring-2-bg: rgba(5, 10, 20, 1.0);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+}
+
+.radial-svg {
+  filter: drop-shadow(var(--shadow));
+}
+
+.ring-track {
+  fill: none;
+  stroke-linecap: butt;
+  pointer-events: none;
+}
+.ring-track-0 { stroke: var(--ring-0-bg); }
+.ring-track-1 { stroke: var(--ring-1-bg); }
+.ring-track-2 { stroke: var(--ring-2-bg); }
+
+.wedge {
+  fill: var(--arc-fill);
+  stroke: var(--arc-stroke);
+  stroke-width: 1.5;
+  transition: fill 180ms ease, transform 180ms ease;
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: center;
+  outline: none;
+  pointer-events: auto;
+}
+
+.wedge:hover {
+  fill: var(--arc-fill-hover);
+}
+
+.wedge.active {
+  fill: var(--arc-fill-active);
+}
+
+.center-disc {
+  fill: var(--center-fill);
+  stroke: var(--center-stroke);
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition: fill 180ms ease;
+  outline: none;
+  pointer-events: auto;
+}
+
+.center-disc:hover {
+  fill: var(--arc-fill-hover);
+}
+
+.icon-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.icon-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: var(--arc-icon);
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 180ms ease;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.icon-label.center {
+  font-size: 28px;
+  color: var(--center-icon);
+}
+
+/* Icon overlay ring wrapper — identical footprint to the SVG so absolutely
+   positioned .icon-label coords line up. */
+.icon-ring {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Ring-out animation: the new ring is revealed by an expanding circular
+   clip — looks like the ring "emerges" from the inner edge outward.
+   --r-in is set per-ring to the ring's inner radius so the animation
+   starts exactly at the previous ring's outer boundary.
+   Collapse never applies this class, so it's instantaneous. */
+@keyframes ring-expand-svg {
+  from { clip-path: circle(var(--r-in, 54px) at 380px 380px); }
+  to   { clip-path: circle(600px at 380px 380px); }
+}
+@keyframes ring-expand-html {
+  from { clip-path: circle(var(--r-in, 54px) at 380px 380px); }
+  to   { clip-path: circle(600px at 380px 380px); }
+}
+
+svg .ring-expand {
+  animation: ring-expand-svg 500ms ease-out both;
+}
+
+div.ring-expand {
+  animation: ring-expand-html 500ms ease-out both;
+}
