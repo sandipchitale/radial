@@ -190,6 +190,9 @@ app.whenReady().then(() => {
 
 ipcMain.on('radial:hide', hideWindow)
 ipcMain.on('radial:quit', () => app.quit())
+ipcMain.on('radial:openDevTools', () => {
+    win?.webContents.openDevTools({ mode: 'detach' })
+})
 ipcMain.on('radial:launch', (_e, appId: string) => {
     launchApp(appId)
 })

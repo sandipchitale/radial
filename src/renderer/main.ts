@@ -7,6 +7,7 @@ declare global {
       quit: () => void
       launch: (appId: string) => void
       openUrl: (url: string) => void
+      openDevTools: () => void
     }
   }
 }
@@ -24,6 +25,7 @@ interface MenuItem {
   children?: MenuItem[]
   theme?: boolean
   close?: boolean
+  inspect?: boolean
 }
 
 const ROOT: MenuItem[] = [
@@ -54,6 +56,7 @@ const ROOT: MenuItem[] = [
     ],
   },
   { id: 'theme', label: 'Theme (light/dark/auto)', icon: 'fa-circle-half-stroke', theme: true },
+  { id: 'inspect', label: 'Inspect', icon: 'fa-bug', inspect: true },
 ]
 
 // ───────── Geometry ─────────
@@ -226,6 +229,7 @@ function render(): void {
           class="radial-svg absolute inset-0"
           width="${SIZE}" height="${SIZE}"
           viewBox="0 0 ${SIZE} ${SIZE}"
+          style="z-index: 1;"
         >
           <!-- Trigger Ring: The menu starting point -->
           <circle
@@ -236,19 +240,28 @@ function render(): void {
           </circle>
 
           ${svgGroups}
+        </svg>
 
-          <!-- Center Handle: Dedicated to dragging -->
+        <div class="icon-layer" style="z-index: 2;">
+          ${iconGroups}
+        </div>
+
+        <!-- Center Handle: Dedicated to dragging, moved to top z-index -->
+        <svg
+          class="absolute inset-0 pointer-events-none"
+          width="${SIZE}" height="${SIZE}"
+          viewBox="0 0 ${SIZE} ${SIZE}"
+          style="z-index: 10;"
+        >
           <circle
             class="center-disc drag"
             cx="${CENTER}" cy="${CENTER}" r="${CENTER_RADIUS}"
             id="center"
+            style="pointer-events: auto;"
           >
             <title>Drag to move</title>
           </circle>
         </svg>
-        <div class="icon-layer">
-          ${iconGroups}
-        </div>
       </div>
     </div>
   `
@@ -283,6 +296,12 @@ function onWedgeClick(e: Event): void {
 
   if (item.close) {
     window.radial.quit()
+    return
+  }
+
+  if (item.inspect) {
+    window.radial.openDevTools()
+    collapseToCenter()
     return
   }
 
