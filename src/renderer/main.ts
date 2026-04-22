@@ -226,7 +226,7 @@ window.onkeydown = (e) => {
   if (e.key === 'Escape') {
     if (breadcrumb.length > 0) { breadcrumb.pop(); render() }
     else if (rootOpen) { rootOpen = false; render() }
-    else window.radial.hide()
+    else window.radial.quit()
   }
 }
 

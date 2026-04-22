@@ -1,4 +1,4 @@
-import { app, BrowserWindow, globalShortcut, ipcMain, screen, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, screen, shell } from 'electron'
 import { spawn } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
@@ -165,25 +165,6 @@ function toggleWindow(): void {
     else showWindow()
 }
 
-function registerToggleShortcut(): void {
-    const candidates: string[] = IS_MAC
-        ? ['Option+R', 'Command+Option+R', 'CommandOrControl+Shift+R']
-        : ['Control+Alt+R', 'Super+R', 'Alt+R']
-
-    for (const accel of candidates) {
-        try {
-            const ok = globalShortcut.register(accel, toggleWindow)
-            if (ok && globalShortcut.isRegistered(accel)) {
-                console.log(`[radial] global shortcut registered: ${accel}`)
-                return
-            }
-        } catch (err) {
-            console.warn(`[radial] failed to register ${accel}:`, err)
-        }
-    }
-    console.warn('[radial] could not register any global shortcut.')
-}
-
 app.on('second-instance', toggleWindow)
 process.on('SIGUSR1', toggleWindow)
 
@@ -194,7 +175,6 @@ app.whenReady().then(() => {
         console.warn('[radial] could not write pid file:', err)
     }
     createWindow()
-    registerToggleShortcut()
     app.on('activate', showWindow)
 })
 
@@ -219,7 +199,6 @@ app.on('window-all-closed', () => {
 })
 
 app.on('will-quit', () => {
-    globalShortcut.unregisterAll()
     try {
         if (fs.existsSync(PID_FILE) && fs.readFileSync(PID_FILE, 'utf8') === String(process.pid)) {
             fs.unlinkSync(PID_FILE)

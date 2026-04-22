@@ -10,7 +10,6 @@ A high-performance, transparent radial concentric menu for app launching and nav
 - **Always-on-Top & Transparent**: Frameless window that stays above other applications while maintaining a clean, distraction-free aesthetic.
 - **Draggable Handle**: A dedicated, opaque center handle for repositioning the window.
 - **OS Settings Integration**: One-click access to native OS settings across Linux, Windows, and macOS.
-- **Global Keyboard Shortcut**: Toggle the menu with a system-wide hotkey (e.g., `Alt+R` or `Cmd+Option+R`).
 - **GPU Stable on Linux**: Specifically tuned to disable hardware acceleration to prevent crashes on Wayland and X11 environments.
 - **Theme Support**: Light, Dark, and Auto (system sync) modes.
 
@@ -58,7 +57,7 @@ The menu structure is defined in `src/renderer/menu-config.ts`. You can customiz
 - **Center Disc**: Drag to move the window.
 - **Trigger Ring (Inner-most)**: Click to toggle the root menu.
 - **Wedges**: Click to execute a command, open a URL, or navigate into a sub-menu.
-- **Escape**: Back one level / Collapse menu / Hide window.
+- **Escape**: Back one level / Collapse menu / Quit application.
 - **Background Click**: Collapse the menu to center.
 
 ## One-shot prompt
@@ -69,10 +68,10 @@ To recreate this optimized implementation, use the following prompt:
 > 
 > **Key Requirements:**
 > 1. **Electron Main Process:**
->    - Create a frameless, transparent, "always-on-top" window.
->    - Implement a global shortcut (Alt+R or Cmd+Option+R) to toggle visibility.
->    - Set the application icon using `icons/radial512x512.png`.
->    - Handle application launching for common tools (Files, Terminal, Browser, Settings) across Linux, Windows, and macOS.
+- Create a frameless, transparent, "always-on-top" window.
+- Set the application icon using `icons/radial512x512.png`.
+- Handle application launching for common tools (Files, Terminal, Browser, Settings) across Linux, Windows, and macOS.
+
 >    - Disable hardware acceleration on Linux for stability.
 >    - Ensure only a single instance of the app runs.
 > 
@@ -91,9 +90,9 @@ To recreate this optimized implementation, use the following prompt:
 >    - Optimize rendering by using an efficient state-to-DOM update loop.
 > 
 > 4. **UX & Interactions:**
->    - Clicking a command or URL should collapse the menu and hide the window.
->    - The `Escape` key should navigate back, collapse the menu, or hide the window sequentially.
->    - Clicking the transparent area around the menu should collapse the menu.
+- Clicking a command or URL should collapse the menu and quit the application.
+- The `Escape` key should navigate back, collapse the menu, or quit the application sequentially.
+- Clicking the transparent area around the menu should collapse the menu.
 >    - Use smooth CSS transitions (180ms - 500ms) for all interactions.
 
 ## License
