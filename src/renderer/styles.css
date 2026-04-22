@@ -52,6 +52,7 @@
 .ring-track {
   fill: none;
   stroke-linecap: butt;
+  stroke-width: 64px;
   pointer-events: none;
 }
 .ring-track-0 { stroke: var(--ring-0-bg); }
@@ -61,6 +62,7 @@
 .trigger-ring {
   fill: none;
   stroke: var(--trigger-fill);
+  stroke-width: 64px;
   cursor: pointer;
   transition: stroke 180ms ease;
   outline: none;
@@ -70,23 +72,21 @@
 }
 
 .wedge {
-  fill: var(--arc-fill);
-  stroke: var(--arc-stroke);
-  stroke-width: 0;
-  transition: fill 180ms ease, transform 180ms ease;
+  fill: none;
+  stroke: var(--arc-fill);
+  stroke-width: 64px;
+  stroke-linecap: butt;
+  transition: stroke 180ms ease;
   cursor: pointer;
-  transform-box: fill-box;
-  transform-origin: center;
   outline: none;
-  pointer-events: auto;
 }
 
 .wedge:hover {
-  fill: var(--arc-fill-hover);
+  stroke: var(--arc-fill-hover);
 }
 
 .wedge.active {
-  fill: var(--arc-fill-active);
+  stroke: var(--arc-fill-active);
 }
 
 .center-disc {
@@ -149,24 +149,44 @@
   pointer-events: none;
 }
 
-/* Ring-out animation: the new ring is revealed by an expanding circular
-   clip — looks like the ring "emerges" from the inner edge outward.
-   --r-in is set per-ring to the ring's inner radius so the animation
-   starts exactly at the previous ring's outer boundary.
-   Collapse never applies this class, so it's instantaneous. */
-@keyframes ring-expand-svg {
-  from { clip-path: circle(var(--r-in, 54px) at 380px 380px); }
-  to   { clip-path: circle(600px at 380px 380px); }
-}
-@keyframes ring-expand-html {
-  from { clip-path: circle(var(--r-in, 54px) at 380px 380px); }
-  to   { clip-path: circle(600px at 380px 380px); }
+/* Ring-out animation: a new ring grows symmetrically from a 1px-thin ring
+   at its midline outward in both directions to the full thickness. Icons
+   fade in after the ring has reached full size (avoids mid-animation
+   flicker). The reverse plays on collapse. */
+@keyframes ring-thickness-grow {
+  from { stroke-width: 1px; }
+  to   { stroke-width: 64px; }
 }
 
-svg .ring-expand {
-  animation: ring-expand-svg 500ms ease-out both;
+@keyframes ring-thickness-shrink {
+  from { stroke-width: 64px; }
+  to   { stroke-width: 1px; }
+}
+
+@keyframes icon-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes icon-fade-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.ring-expand .ring-track,
+.ring-expand .wedge {
+  animation: ring-thickness-grow 500ms ease-out both;
+}
+
+.ring-collapse .ring-track,
+.ring-collapse .wedge {
+  animation: ring-thickness-shrink 500ms ease-in both;
 }
 
 div.ring-expand {
-  animation: ring-expand-html 500ms ease-out both;
+  animation: icon-fade-in 180ms ease-out 500ms both;
+}
+
+div.ring-collapse {
+  animation: icon-fade-out 150ms ease-in both;
 }

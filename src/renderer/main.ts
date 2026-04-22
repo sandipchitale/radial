@@ -109,6 +109,10 @@ let rootOpen = false
 const breadcrumb: MenuItem[] = []
 // How many rings were on-screen at the previous render.
 let prevDepth = 0
+// When collapsing, we defer the DOM rebuild until the collapse animation
+// completes. This is the pending timeout handle (or null).
+let pendingCollapseTimeout: number | null = null
+const COLLAPSE_MS = 500
 
 // ───────── Theme ─────────
 type ThemeMode = 'light' | 'dark' | 'auto'
@@ -145,30 +149,23 @@ function polar(cx: number, cy: number, r: number, angleDeg: number): [number, nu
   return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
 }
 
-/** Build a closed pie-segment (annular wedge) path. */
-function arcPath(
-  cx: number, cy: number,
-  rIn: number, rOut: number,
-  startDeg: number, endDeg: number,
-): string {
-  const [x1, y1] = polar(cx, cy, rOut, startDeg)
-  const [x2, y2] = polar(cx, cy, rOut, endDeg)
-  const [x3, y3] = polar(cx, cy, rIn, endDeg)
-  const [x4, y4] = polar(cx, cy, rIn, startDeg)
-  const largeArc = endDeg - startDeg > 180 ? 1 : 0
-  return [
-    `M ${x1} ${y1}`,
-    `A ${rOut} ${rOut} 0 ${largeArc} 1 ${x2} ${y2}`,
-    `L ${x3} ${y3}`,
-    `A ${rIn} ${rIn} 0 ${largeArc} 0 ${x4} ${y4}`,
-    'Z',
-  ].join(' ')
-}
+// Wedges are drawn as stroked <circle> elements with pathLength="360" plus
+// stroke-dasharray to cut out just the angular slice. This makes r and
+// stroke-width animatable (needed for "grow outward from inner radius").
+// SVG circle path starts at 3 o'clock (polar 90°) and sweeps clockwise.
+// So a wedge starting at polar `startDeg` needs dashoffset = 90 - startDeg.
 
 // ───────── Rendering ─────────
 const appEl = document.querySelector<HTMLDivElement>('#app')!
 
 function render(): void {
+  // If a previous collapse is still in-flight, finish it now so we don't
+  // stack animations on stale DOM.
+  if (pendingCollapseTimeout !== null) {
+    clearTimeout(pendingCollapseTimeout)
+    pendingCollapseTimeout = null
+  }
+
   const levels: MenuItem[][] = []
   if (rootOpen) {
     levels.push(ROOT)
@@ -179,10 +176,33 @@ function render(): void {
     }
   }
 
-  // Only animate when a new ring appears (expansion). Collapse = instant.
+  // Collapse: fewer rings than before. Animate the outgoing rings in the
+  // current DOM, then rebuild once the animation finishes.
+  if (levels.length < prevDepth) {
+    const rings = appEl.querySelectorAll<SVGGElement>('g.ring-group')
+    const iconRings = appEl.querySelectorAll<HTMLDivElement>('div.icon-ring')
+    rings.forEach((ring, i) => {
+      ring.classList.remove('ring-expand')
+      if (i >= levels.length) ring.classList.add('ring-collapse')
+    })
+    iconRings.forEach((ring, i) => {
+      ring.classList.remove('ring-expand')
+      if (i >= levels.length) ring.classList.add('ring-collapse')
+    })
+    prevDepth = levels.length
+    pendingCollapseTimeout = window.setTimeout(() => {
+      pendingCollapseTimeout = null
+      buildDOM(levels, -1)
+    }, COLLAPSE_MS)
+    return
+  }
+
   const newLevelIndex = levels.length > prevDepth ? levels.length - 1 : -1
   prevDepth = levels.length
+  buildDOM(levels, newLevelIndex)
+}
 
+function buildDOM(levels: MenuItem[][], newLevelIndex: number): void {
   const wedgesByLevel: string[][] = []
   const iconsByLevel: string[][] = []
 
@@ -196,14 +216,14 @@ function render(): void {
     const slice = 360 / n
     const offset = -slice / 2
 
+    const midR = (rIn + rOut) / 2
     for (let i = 0; i < n; i++) {
       const item = items[i]!
       const start = offset + i * slice
       const end = start + slice
-      const d = arcPath(CENTER, CENTER, rIn, rOut, start, end)
       const mid = (start + end) / 2
-      const midR = (rIn + rOut) / 2
       const [ix, iy] = polar(CENTER, CENTER, midR, mid)
+      const dashOffset = 90 - start
 
       const isActive =
         level < breadcrumb.length && breadcrumb[level]!.id === item.id
@@ -214,7 +234,7 @@ function render(): void {
         : item.label
 
       wedgesByLevel[level]!.push(
-        `<path class="wedge${isActive ? ' active' : ''}" data-level="${level}" data-id="${item.id}" d="${d}"><title>${escapeHtml(tooltip)}</title></path>`
+        `<circle class="wedge${isActive ? ' active' : ''}" data-level="${level}" data-id="${item.id}" cx="${CENTER}" cy="${CENTER}" r="${midR}" pathLength="360" stroke-dasharray="${slice} ${360 - slice}" stroke-dashoffset="${dashOffset}"><title>${escapeHtml(tooltip)}</title></circle>`
       )
       iconsByLevel[level]!.push(
         `<div class="icon-label" style="left:${ix}px;top:${iy}px;"><i class="${iconStyle} ${item.icon}"></i></div>`
@@ -227,15 +247,17 @@ function render(): void {
     const rOut = ringOuter(level)
     const rMid = (rIn + rOut) / 2
     const cls = level === newLevelIndex ? 'ring-group ring-expand' : 'ring-group'
-    const bg = `<circle class="ring-track ring-track-${level}" cx="${CENTER}" cy="${CENTER}" r="${rMid}" stroke-width="${RING_THICKNESS}" />`
-    return `<g class="${cls}" data-r-in="${rIn}" data-r-out="${rOut}">${bg}${wedges.join('')}</g>`
+    const vars = `--r-in:${rIn}px;--r-out:${rOut}px;--r-mid:${rMid}px;`
+    const bg = `<circle class="ring-track ring-track-${level}" cx="${CENTER}" cy="${CENTER}" r="${rMid}" />`
+    return `<g class="${cls}" style="${vars}">${bg}${wedges.join('')}</g>`
   }).join('\n')
 
   const iconGroups = iconsByLevel.map((ics, level) => {
     const rIn = ringInner(level)
     const rOut = ringOuter(level)
     const cls = level === newLevelIndex ? 'icon-ring ring-expand' : 'icon-ring'
-    return `<div class="${cls}" data-r-in="${rIn}" data-r-out="${rOut}">${ics.join('')}</div>`
+    const vars = `--r-in:${rIn}px;--r-out:${rOut}px;`
+    return `<div class="${cls}" style="${vars}">${ics.join('')}</div>`
   }).join('\n')
 
   // Trigger Ring (Level -1) geometry
@@ -259,7 +281,7 @@ function render(): void {
           <!-- Trigger Ring: The menu starting point -->
           <circle
             class="trigger-ring"
-            cx="${CENTER}" cy="${CENTER}" r="${trMid}" stroke-width="${RING_THICKNESS}"
+            cx="${CENTER}" cy="${CENTER}" r="${trMid}"
           >
             <title>Menu</title>
           </circle>
@@ -284,7 +306,7 @@ function render(): void {
   `
 
   // Wire events
-  appEl.querySelectorAll<SVGPathElement>('path.wedge').forEach((el) => {
+  appEl.querySelectorAll<SVGCircleElement>('circle.wedge').forEach((el) => {
     el.addEventListener('click', onWedgeClick)
   })
   appEl.querySelector<SVGCircleElement>('.trigger-ring')?.addEventListener('click', onTriggerClick)
@@ -305,7 +327,7 @@ function findItem(level: number, id: string): MenuItem | undefined {
 }
 
 function onWedgeClick(e: Event): void {
-  const el = e.currentTarget as SVGPathElement
+  const el = e.currentTarget as SVGCircleElement
   const level = Number(el.dataset['level'])
   const id = el.dataset['id']!
   const item = findItem(level, id)
