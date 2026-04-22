@@ -277,7 +277,7 @@ function render(): void {
           class="center-disc drag"
           style="left:${CENTER - CENTER_RADIUS}px;top:${CENTER - CENTER_RADIUS}px;width:${CENTER_RADIUS * 2}px;height:${CENTER_RADIUS * 2}px;"
         >
-          <span class="center-drag-glyph">&#x274B;</span>
+          <span class="center-drag-glyph">&#x263C;&#xFE0E;</span>
         </div>
       </div>
     </div>
