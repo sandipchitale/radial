@@ -52,9 +52,9 @@ export const ROOT_MENU: MenuItem[] = [
   },
   {
     id: 'ai', label: 'AI', icon: 'fa-robot', children: [
-      { id: 'gemini', label: 'Gemini', icon: 'fa-gem', url: 'https://gemini.google.com/' },
-      { id: 'claude', label: 'Claude AI', icon: 'fa-brain', url: 'https://claude.ai/' },
-      { id: 'chatgpt', label: 'ChatGPT', icon: 'fa-comments', url: 'https://chat.openai.com/' },
+      { id: 'gemini', label: 'Gemini', icon: 'fa-wand-magic-sparkles text-[#c06377]', url: 'https://gemini.google.com/' },
+      { id: 'claude', label: 'Claude AI', icon: 'fa-certificate text-[#D97757]', url: 'https://claude.ai/' },
+      { id: 'chatgpt', label: 'ChatGPT', icon: 'fa-brands fa-instalod', url: 'https://chat.openai.com/' },
     ],
   },
   {
