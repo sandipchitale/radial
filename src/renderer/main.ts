@@ -246,22 +246,13 @@ function render(): void {
           ${iconGroups}
         </div>
 
-        <!-- Center Handle: Dedicated to dragging, moved to top z-index -->
-        <svg
-          class="absolute inset-0 pointer-events-none"
-          width="${SIZE}" height="${SIZE}"
-          viewBox="0 0 ${SIZE} ${SIZE}"
-          style="z-index: 10;"
-        >
-          <circle
-            class="center-disc drag"
-            cx="${CENTER}" cy="${CENTER}" r="${CENTER_RADIUS}"
-            id="center"
-            style="pointer-events: auto;"
-          >
-            <title>Drag to move</title>
-          </circle>
-        </svg>
+        <!-- Center Handle: HTML element so -webkit-app-region: drag actually works -->
+        <div
+          id="center"
+          class="center-disc drag"
+          title="Drag to move"
+          style="left:${CENTER - CENTER_RADIUS}px;top:${CENTER - CENTER_RADIUS}px;width:${CENTER_RADIUS * 2}px;height:${CENTER_RADIUS * 2}px;"
+        ></div>
       </div>
     </div>
   `

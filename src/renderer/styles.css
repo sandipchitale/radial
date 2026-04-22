@@ -90,16 +90,18 @@
 }
 
 .center-disc {
-  fill: var(--center-fill);
-  stroke: var(--center-stroke);
-  stroke-width: 0;
+  position: absolute;
+  background: var(--center-fill);
+  border-radius: 50%;
   cursor: move;
   outline: none;
   pointer-events: auto;
+  z-index: 10;
+  transition: background 180ms ease;
 }
 
 .center-disc:hover {
-  fill: var(--arc-fill-hover);
+  background: var(--arc-fill-hover);
 }
 
 .icon-layer {
