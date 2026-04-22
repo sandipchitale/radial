@@ -87,6 +87,7 @@ function launchApp(appId: string): void {
 }
 
 function baseWindowOptions(): Electron.BrowserWindowConstructorOptions {
+    const iconPath = path.join(__dirname, '../icons/radial512x512.png')
     return {
         frame: false,
         transparent: true,
@@ -96,6 +97,7 @@ function baseWindowOptions(): Electron.BrowserWindowConstructorOptions {
         show: false,
         hasShadow: false,
         backgroundColor: '#00000000',
+        icon: iconPath,
         webPreferences: {
             preload: path.join(__dirname, 'preload.mjs'),
             contextIsolation: true,
@@ -134,10 +136,6 @@ function createWindow(): void {
     win.on('closed', () => {
         win = null
     })
-
-    win.on('hide', () => {
-        app.quit()
-    })
 }
 
 function showWindow(): void {
@@ -145,13 +143,17 @@ function showWindow(): void {
         createWindow()
         return
     }
-    if (!win.isVisible()) win.show()
+    if (!win.isVisible()) {
+        win.show()
+    }
     if (win.isMinimized()) win.restore()
     win.focus()
 }
 
 function hideWindow(): void {
-    if (win && !win.isDestroyed()) win.hide()
+    if (win && !win.isDestroyed()) {
+        win.hide()
+    }
 }
 
 function toggleWindow(): void {

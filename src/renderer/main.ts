@@ -1,4 +1,5 @@
 import './styles.css'
+import { ROOT_MENU, MenuItem } from './menu-config'
 
 declare global {
   interface Window {
@@ -13,123 +14,37 @@ declare global {
   }
 }
 
-// ───────── Menu config (mirrors what would live in ~/.radial) ─────────
-type IconStyle = 'fas' | 'fab' | 'far'
-
-interface MenuItem {
-  id: string
-  label: string
-  icon: string
-  iconStyle?: IconStyle
-  command?: string
-  url?: string
-  children?: MenuItem[]
-  theme?: boolean
-  close?: boolean
-  inspect?: boolean
-}
-
-const PLATFORM = window.radial.platform
-const IS_MAC = PLATFORM === 'darwin'
-const IS_WIN = PLATFORM === 'win32'
-
-const filesItem: MenuItem = IS_MAC
-  ? { id: 'files', label: 'Finder', icon: 'fa-folder-open', command: 'files' }
-  : IS_WIN
-    ? { id: 'files', label: 'Explorer', icon: 'fa-folder-open', command: 'files' }
-    : { id: 'files', label: 'Files', icon: 'fa-folder-open', command: 'files' }
-
-const terminalItems: MenuItem[] = IS_WIN
-  ? [
-      { id: 'cmd', label: 'Command Prompt', icon: 'fa-terminal', command: 'cmd' },
-      { id: 'powershell', label: 'PowerShell', icon: 'fa-terminal', command: 'powershell' },
-    ]
-  : [{ id: 'terminal', label: 'Terminal', icon: 'fa-terminal', command: 'terminal' }]
-
-const browserItems: MenuItem[] = IS_MAC
-  ? [
-      { id: 'chrome', label: 'Chrome', icon: 'fa-chrome', iconStyle: 'fab', command: 'chrome' },
-      { id: 'safari', label: 'Safari', icon: 'fa-safari', iconStyle: 'fab', command: 'safari' },
-    ]
-  : [{ id: 'chrome', label: 'Chrome', icon: 'fa-chrome', iconStyle: 'fab', command: 'chrome' }]
-
-const ROOT: MenuItem[] = [
-  filesItem,
-  ...terminalItems,
-  ...browserItems,
-  {
-    id: 'google', label: 'Google', icon: 'fa-google', iconStyle: 'fab', children: [
-      { id: 'gmail', label: 'Gmail', icon: 'fa-envelope', url: 'https://mail.google.com/' },
-      { id: 'youtube', label: 'YouTube', icon: 'fa-youtube', iconStyle: 'fab', url: 'https://www.youtube.com/' },
-      { id: 'gmusic', label: 'Google Music', icon: 'fa-music', url: 'https://music.youtube.com/' },
-      { id: 'gcal', label: 'Google Calendar', icon: 'fa-calendar-days', url: 'https://calendar.google.com/' },
-      { id: 'gdrive', label: 'Google Drive', icon: 'fa-google-drive', iconStyle: 'fab', url: 'https://drive.google.com/' },
-    ],
-  },
-  {
-    id: 'ai', label: 'AI', icon: 'fa-robot', children: [
-      { id: 'gemini', label: 'Gemini', icon: 'fa-gem', url: 'https://gemini.google.com/' },
-      { id: 'claude', label: 'Claude AI', icon: 'fa-brain', url: 'https://claude.ai/' },
-      { id: 'chatgpt', label: 'ChatGPT', icon: 'fa-comments', url: 'https://chat.openai.com/' },
-    ],
-  },
-  {
-    id: 'pro', label: 'Professional', icon: 'fa-briefcase', children: [
-      { id: 'linkedin', label: 'LinkedIn', icon: 'fa-linkedin', iconStyle: 'fab', url: 'https://www.linkedin.com/' },
-      { id: 'github', label: 'GitHub', icon: 'fa-github', iconStyle: 'fab', url: 'https://github.com/' },
-    ],
-  },
-  { id: 'settings', label: 'Settings', icon: 'fa-gear', command: 'settings' },
-  { id: 'inspect', label: 'Inspect', icon: 'fa-bug', inspect: true },
-  { id: 'theme', label: 'Theme (light/dark/auto)', icon: 'fa-circle-half-stroke', theme: true },
-]
-
-// ───────── Geometry ─────────
+// ───────── Geometry Constants ─────────
 const SIZE = 760
 const CENTER = SIZE / 2
-const CENTER_RADIUS = 32       // central drag handle (doubled)
-const TRIGGER_INNER = 44       // 12px gap from the 32px center handle
-const GAP = 12                 // thinner, uniform gap between rings
+const CENTER_RADIUS = 32       // central drag handle
+const TRIGGER_INNER = 44       // 12px gap from the center handle
+const GAP = 12                 // uniform gap between rings
 const RING_THICKNESS = 64      // identical width for ALL rings
 
-function ringInner(level: number): number {
-  // level -1 = Trigger Ring (first ring)
-  // level 0 = ROOT command ring (second ring)
-  if (level === -1) return TRIGGER_INNER
-  // Subsequent rings start after the trigger ring + n*(thickness + gap)
-  return TRIGGER_INNER + (level + 1) * (RING_THICKNESS + GAP)
-}
-function ringOuter(level: number): number {
-  return ringInner(level) + RING_THICKNESS
-}
-
 // ───────── State ─────────
-// rootOpen: when false only the center disc + trigger ring are drawn
 let rootOpen = false
 const breadcrumb: MenuItem[] = []
-// How many rings were on-screen at the previous render.
 let prevDepth = 0
-// When collapsing, we defer the DOM rebuild until the collapse animation
-// completes. This is the pending timeout handle (or null).
 let pendingCollapseTimeout: number | null = null
 const COLLAPSE_MS = 500
 
-// ───────── Theme ─────────
+// ───────── Theme Management ─────────
 type ThemeMode = 'light' | 'dark' | 'auto'
 const THEME_KEY = 'radial.theme'
 
-function loadTheme(): ThemeMode {
+const loadTheme = (): ThemeMode => {
   const v = localStorage.getItem(THEME_KEY) as ThemeMode | null
   return v === 'light' || v === 'dark' || v === 'auto' ? v : 'auto'
 }
 
-function applyTheme(mode: ThemeMode): void {
+const applyTheme = (mode: ThemeMode): void => {
   const sysDark = matchMedia('(prefers-color-scheme: dark)').matches
   const effective = mode === 'auto' ? (sysDark ? 'dark' : 'light') : mode
   document.documentElement.classList.toggle('dark', effective === 'dark')
 }
 
-function cycleTheme(): ThemeMode {
+const cycleTheme = (): ThemeMode => {
   const cur = loadTheme()
   const next: ThemeMode = cur === 'light' ? 'dark' : cur === 'dark' ? 'auto' : 'light'
   localStorage.setItem(THEME_KEY, next)
@@ -137,30 +52,94 @@ function cycleTheme(): ThemeMode {
   return next
 }
 
-applyTheme(loadTheme())
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-  if (loadTheme() === 'auto') applyTheme('auto')
-})
+// ───────── Geometry Helpers ─────────
+const ringInner = (level: number): number => 
+  level === -1 ? TRIGGER_INNER : TRIGGER_INNER + (level + 1) * (RING_THICKNESS + GAP)
 
-// ───────── SVG helpers ─────────
-function polar(cx: number, cy: number, r: number, angleDeg: number): [number, number] {
-  const a = (angleDeg - 90) * Math.PI / 180
+const ringOuter = (level: number): number => ringInner(level) + RING_THICKNESS
 
-  return [cx + r * Math.cos(a), cy + r * Math.sin(a)]
+const polar = (cx: number, cy: number, r: number, angleDeg: number): [number, number] => {
+  const rad = (angleDeg - 90) * Math.PI / 180
+  return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)]
 }
 
-// Wedges are drawn as stroked <circle> elements with pathLength="360" plus
-// stroke-dasharray to cut out just the angular slice. This makes r and
-// stroke-width animatable (needed for "grow outward from inner radius").
-// SVG circle path starts at 3 o'clock (polar 90°) and sweeps clockwise.
-// So a wedge starting at polar `startDeg` needs dashoffset = 90 - startDeg.
+const escapeHtml = (s: string): string =>
+  s.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]!))
 
-// ───────── Rendering ─────────
+// ───────── Rendering Logic ─────────
 const appEl = document.querySelector<HTMLDivElement>('#app')!
 
-function render(): void {
-  // If a previous collapse is still in-flight, finish it now so we don't
-  // stack animations on stale DOM.
+const buildWedge = (item: MenuItem, level: number, i: number, n: number, midR: number): { wedge: string; icon: string } => {
+  const slice = 360 / n
+  const offset = -slice / 2
+  const start = offset + i * slice
+  const mid = start + slice / 2
+  const [ix, iy] = polar(CENTER, CENTER, midR, mid)
+  const dashOffset = 90 - start
+
+  const isActive = level < breadcrumb.length && breadcrumb[level]!.id === item.id
+  const iconStyle = item.iconStyle ?? 'fas'
+  const tooltip = item.children ? `${item.label} (folder)` : item.label
+
+  return {
+    wedge: `<circle class="wedge${isActive ? ' active' : ''}" data-level="${level}" data-id="${item.id}" cx="${CENTER}" cy="${CENTER}" r="${midR}" pathLength="360" stroke-dasharray="${slice} ${360 - slice}" stroke-dashoffset="${dashOffset}"><title>${escapeHtml(tooltip)}</title></circle>`,
+    icon: `<div class="icon-label" style="left:${ix}px;top:${iy}px;"><i class="${iconStyle} ${item.icon}"></i></div>`
+  }
+}
+
+const buildDOM = (levels: MenuItem[][], newLevelIndex: number): void => {
+  const svgGroups: string[] = []
+  const iconGroups: string[] = []
+
+  levels.forEach((items, level) => {
+    const rIn = ringInner(level)
+    const rOut = ringOuter(level)
+    const rMid = (rIn + rOut) / 2
+    const n = items.length
+    
+    const levelWedges: string[] = []
+    const levelIcons: string[] = []
+    
+    items.forEach((item, i) => {
+      const { wedge, icon } = buildWedge(item, level, i, n, rMid)
+      levelWedges.push(wedge)
+      levelIcons.push(icon)
+    })
+
+    const isExpanding = level === newLevelIndex
+    const groupCls = `ring-group${isExpanding ? ' ring-expand' : ''}`
+    const iconCls = `icon-ring${isExpanding ? ' ring-expand' : ''}`
+    const vars = `--r-in:${rIn}px;--r-out:${rOut}px;--r-mid:${rMid}px;`
+    
+    svgGroups.push(`<g class="${groupCls}" style="${vars}"><circle class="ring-track ring-track-${level % 3}" cx="${CENTER}" cy="${CENTER}" r="${rMid}" />${levelWedges.join('')}</g>`)
+    iconGroups.push(`<div class="${iconCls}" style="${vars}">${levelIcons.join('')}</div>`)
+  })
+
+  const trMid = (ringInner(-1) + ringOuter(-1)) / 2
+  const centerSize = CENTER_RADIUS * 2
+
+  appEl.innerHTML = `
+    <div id="stage" class="flex h-screen w-screen items-center justify-center">
+      <div id="surface" class="relative" style="width:${SIZE}px;height:${SIZE}px;">
+        <svg class="radial-svg absolute inset-0" width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" style="z-index: 1;">
+          <circle class="trigger-ring" cx="${CENTER}" cy="${CENTER}" r="${trMid}"><title>Menu</title></circle>
+          ${svgGroups.join('')}
+        </svg>
+        <div class="icon-layer" style="z-index: 2;">${iconGroups.join('')}</div>
+        <div id="center" class="center-disc drag" style="left:${CENTER - CENTER_RADIUS}px;top:${CENTER - CENTER_RADIUS}px;width:${centerSize}px;height:${centerSize}px;">
+          <span class="center-drag-glyph">&#x263C;&#xFE0E;</span>
+        </div>
+      </div>
+    </div>
+  `
+
+  // Re-attach events
+  appEl.querySelectorAll<SVGCircleElement>('circle.wedge').forEach(el => el.onclick = onWedgeClick)
+  const trigger = appEl.querySelector<SVGCircleElement>('.trigger-ring')
+  if (trigger) trigger.onclick = onTriggerClick
+}
+
+const render = (): void => {
   if (pendingCollapseTimeout !== null) {
     clearTimeout(pendingCollapseTimeout)
     pendingCollapseTimeout = null
@@ -168,27 +147,18 @@ function render(): void {
 
   const levels: MenuItem[][] = []
   if (rootOpen) {
-    levels.push(ROOT)
-    for (const parent of breadcrumb) {
-      if (parent.children && parent.children.length > 0) {
-        levels.push(parent.children)
-      }
-    }
+    levels.push(ROOT_MENU)
+    breadcrumb.forEach(parent => {
+      if (parent.children?.length) levels.push(parent.children)
+    })
   }
 
-  // Collapse: fewer rings than before. Animate the outgoing rings in the
-  // current DOM, then rebuild once the animation finishes.
   if (levels.length < prevDepth) {
     const rings = appEl.querySelectorAll<SVGGElement>('g.ring-group')
     const iconRings = appEl.querySelectorAll<HTMLDivElement>('div.icon-ring')
-    rings.forEach((ring, i) => {
-      ring.classList.remove('ring-expand')
-      if (i >= levels.length) ring.classList.add('ring-collapse')
-    })
-    iconRings.forEach((ring, i) => {
-      ring.classList.remove('ring-expand')
-      if (i >= levels.length) ring.classList.add('ring-collapse')
-    })
+    rings.forEach((ring, i) => i >= levels.length && ring.classList.add('ring-collapse'))
+    iconRings.forEach((ring, i) => i >= levels.length && ring.classList.add('ring-collapse'))
+    
     prevDepth = levels.length
     pendingCollapseTimeout = window.setTimeout(() => {
       pendingCollapseTimeout = null
@@ -202,159 +172,32 @@ function render(): void {
   buildDOM(levels, newLevelIndex)
 }
 
-function buildDOM(levels: MenuItem[][], newLevelIndex: number): void {
-  const wedgesByLevel: string[][] = []
-  const iconsByLevel: string[][] = []
-
-  for (let level = 0; level < levels.length; level++) {
-    const items = levels[level]!
-    const rIn = ringInner(level)
-    const rOut = ringOuter(level)
-    wedgesByLevel[level] = []
-    iconsByLevel[level] = []
-    const n = items.length
-    const slice = 360 / n
-    const offset = -slice / 2
-
-    const midR = (rIn + rOut) / 2
-    for (let i = 0; i < n; i++) {
-      const item = items[i]!
-      const start = offset + i * slice
-      const end = start + slice
-      const mid = (start + end) / 2
-      const [ix, iy] = polar(CENTER, CENTER, midR, mid)
-      const dashOffset = 90 - start
-
-      const isActive =
-        level < breadcrumb.length && breadcrumb[level]!.id === item.id
-
-      const iconStyle = item.iconStyle ?? 'fas'
-      const tooltip = item.children
-        ? `${item.label} (folder)`
-        : item.label
-
-      wedgesByLevel[level]!.push(
-        `<circle class="wedge${isActive ? ' active' : ''}" data-level="${level}" data-id="${item.id}" cx="${CENTER}" cy="${CENTER}" r="${midR}" pathLength="360" stroke-dasharray="${slice} ${360 - slice}" stroke-dashoffset="${dashOffset}"><title>${escapeHtml(tooltip)}</title></circle>`
-      )
-      iconsByLevel[level]!.push(
-        `<div class="icon-label" style="left:${ix}px;top:${iy}px;"><i class="${iconStyle} ${item.icon}"></i></div>`
-      )
-    }
-  }
-
-  const svgGroups = wedgesByLevel.map((wedges, level) => {
-    const rIn = ringInner(level)
-    const rOut = ringOuter(level)
-    const rMid = (rIn + rOut) / 2
-    const cls = level === newLevelIndex ? 'ring-group ring-expand' : 'ring-group'
-    const vars = `--r-in:${rIn}px;--r-out:${rOut}px;--r-mid:${rMid}px;`
-    const bg = `<circle class="ring-track ring-track-${level}" cx="${CENTER}" cy="${CENTER}" r="${rMid}" />`
-    return `<g class="${cls}" style="${vars}">${bg}${wedges.join('')}</g>`
-  }).join('\n')
-
-  const iconGroups = iconsByLevel.map((ics, level) => {
-    const rIn = ringInner(level)
-    const rOut = ringOuter(level)
-    const cls = level === newLevelIndex ? 'icon-ring ring-expand' : 'icon-ring'
-    const vars = `--r-in:${rIn}px;--r-out:${rOut}px;`
-    return `<div class="${cls}" style="${vars}">${ics.join('')}</div>`
-  }).join('\n')
-
-  // Trigger Ring (Level -1) geometry
-  const trIn = ringInner(-1)
-  const trOut = ringOuter(-1)
-  const trMid = (trIn + trOut) / 2
-
-  appEl.innerHTML = `
-    <div id="stage" class="flex h-screen w-screen items-center justify-center">
-      <div
-        id="surface"
-        class="relative"
-        style="width:${SIZE}px;height:${SIZE}px;"
-      >
-        <svg
-          class="radial-svg absolute inset-0"
-          width="${SIZE}" height="${SIZE}"
-          viewBox="0 0 ${SIZE} ${SIZE}"
-          style="z-index: 1;"
-        >
-          <!-- Trigger Ring: The menu starting point -->
-          <circle
-            class="trigger-ring"
-            cx="${CENTER}" cy="${CENTER}" r="${trMid}"
-          >
-            <title>Menu</title>
-          </circle>
-
-          ${svgGroups}
-        </svg>
-
-        <div class="icon-layer" style="z-index: 2;">
-          ${iconGroups}
-        </div>
-
-        <!-- Center Handle: HTML element so -webkit-app-region: drag actually works -->
-        <div
-          id="center"
-          class="center-disc drag"
-          style="left:${CENTER - CENTER_RADIUS}px;top:${CENTER - CENTER_RADIUS}px;width:${CENTER_RADIUS * 2}px;height:${CENTER_RADIUS * 2}px;"
-        >
-          <span class="center-drag-glyph">&#x263C;&#xFE0E;</span>
-        </div>
-      </div>
-    </div>
-  `
-
-  // Wire events
-  appEl.querySelectorAll<SVGCircleElement>('circle.wedge').forEach((el) => {
-    el.addEventListener('click', onWedgeClick)
-  })
-  appEl.querySelector<SVGCircleElement>('.trigger-ring')?.addEventListener('click', onTriggerClick)
-}
-
-function onTriggerClick(): void {
+// ───────── Event Handlers ─────────
+const onTriggerClick = (e: MouseEvent): void => {
+  e.stopPropagation()
   rootOpen = !rootOpen
   if (!rootOpen) breadcrumb.length = 0
   render()
 }
 
-function findItem(level: number, id: string): MenuItem | undefined {
-  const levels: MenuItem[][] = [ROOT]
-  for (const parent of breadcrumb) {
-    if (parent.children) levels.push(parent.children)
-  }
-  return levels[level]?.find((m) => m.id === id)
-}
-
-function onWedgeClick(e: Event): void {
+const onWedgeClick = (e: MouseEvent): void => {
+  e.stopPropagation()
   const el = e.currentTarget as SVGCircleElement
   const level = Number(el.dataset['level'])
   const id = el.dataset['id']!
-  const item = findItem(level, id)
+  
+  const levels = [ROOT_MENU, ...breadcrumb.map(b => b.children ?? [])]
+  const item = levels[level]?.find(m => m.id === id)
   if (!item) return
 
-  if (item.close) {
-    window.radial.quit()
-    return
-  }
+  if (item.close) { window.radial.quit(); return }
+  if (item.inspect) { window.radial.openDevTools(); collapseToCenter(); return }
+  if (item.theme) { cycleTheme(); return }
 
-  if (item.inspect) {
-    window.radial.openDevTools()
-    collapseToCenter()
-    return
-  }
-
-  if (item.theme) {
-    cycleTheme()
-    return
-  }
-
-  if (item.children && item.children.length > 0) {
+  if (item.children?.length) {
     if (breadcrumb[level]?.id === item.id) {
-      // folder already open on this ring → toggle closed (drop it + any deeper)
       breadcrumb.length = level
     } else {
-      // truncate breadcrumb to this level, then open this folder
       breadcrumb.length = level
       breadcrumb.push(item)
     }
@@ -362,48 +205,36 @@ function onWedgeClick(e: Event): void {
     return
   }
 
-  if (item.command) {
-    window.radial.launch(item.command)
-    collapseToCenter()
-    return
-  }
-
-  if (item.url) {
-    window.radial.openUrl(item.url)
-    collapseToCenter()
-    return
-  }
+  if (item.command) window.radial.launch(item.command)
+  if (item.url) window.radial.openUrl(item.url)
+  collapseToCenter()
 }
 
-function collapseToCenter(): void {
+const collapseToCenter = (): void => {
   breadcrumb.length = 0
   rootOpen = false
   render()
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;')
+// ───────── Initialization ─────────
+applyTheme(loadTheme())
+matchMedia('(prefers-color-scheme: dark)').onchange = () => {
+  if (loadTheme() === 'auto') applyTheme('auto')
 }
 
-// ───────── Keyboard ─────────
-window.addEventListener('keydown', (e) => {
+window.onkeydown = (e) => {
   if (e.key === 'Escape') {
-    e.preventDefault()
-    if (breadcrumb.length > 0) {
-      breadcrumb.pop()
-      render()
-    } else if (rootOpen) {
-      rootOpen = false
-      render()
-    } else {
-      window.radial.quit()
-    }
+    if (breadcrumb.length > 0) { breadcrumb.pop(); render() }
+    else if (rootOpen) { rootOpen = false; render() }
+    else window.radial.hide()
   }
-})
+}
+
+// Close when clicking stage background (transparent area)
+document.onclick = (e) => {
+    if ((e.target as HTMLElement).id === 'stage') {
+        collapseToCenter()
+    }
+}
 
 render()
