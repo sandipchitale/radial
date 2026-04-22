@@ -38,14 +38,22 @@
     "files": [
       "dist/**/*",
       "dist-electron/**/*",
+      "icons/**/*",
       "package.json"
     ],
     "asar": true,
     "publish": null,
     "linux": {
+      "icon": "icons/radial512x512.png",
       "target": ["AppImage"],
       "category": "Utility",
       "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "win": {
+      "icon": "icons/radial512x512.png"
+    },
+    "mac": {
+      "icon": "icons/radial512x512.png"
     }
   }
 }
