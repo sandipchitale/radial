@@ -87,8 +87,8 @@ const ROOT: MenuItem[] = [
 // ───────── Geometry ─────────
 const SIZE = 760
 const CENTER = SIZE / 2
-const CENTER_RADIUS = 16       // much smaller blue handle
-const TRIGGER_INNER = 28       // 12px gap from the 16px center handle
+const CENTER_RADIUS = 32       // central drag handle (doubled)
+const TRIGGER_INNER = 44       // 12px gap from the 32px center handle
 const GAP = 12                 // thinner, uniform gap between rings
 const RING_THICKNESS = 64      // identical width for ALL rings
 
@@ -275,9 +275,10 @@ function render(): void {
         <div
           id="center"
           class="center-disc drag"
-          title="Drag to move"
           style="left:${CENTER - CENTER_RADIUS}px;top:${CENTER - CENTER_RADIUS}px;width:${CENTER_RADIUS * 2}px;height:${CENTER_RADIUS * 2}px;"
-        ></div>
+        >
+          <span class="center-drag-glyph">&#x274B;</span>
+        </div>
       </div>
     </div>
   `

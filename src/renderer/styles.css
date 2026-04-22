@@ -98,10 +98,21 @@
   pointer-events: auto;
   z-index: 10;
   transition: background 180ms ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .center-disc:hover {
   background: var(--arc-fill-hover);
+}
+
+.center-drag-glyph {
+  font-size: 64px;
+  line-height: 1;
+  color: var(--center-icon);
+  pointer-events: none;
+  user-select: none;
 }
 
 .icon-layer {
