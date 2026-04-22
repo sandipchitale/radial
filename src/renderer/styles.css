@@ -149,6 +149,13 @@
   pointer-events: none;
 }
 
+.gradient-icon {
+  background: linear-gradient(to right, #067ef6, #d73f95);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block; /* Required for clipping to work correctly */
+}
+
 /* Ring-out animation: a new ring grows symmetrically from a 1px-thin ring
    at its midline outward in both directions to the full thickness. Icons
    fade in after the ring has reached full size (avoids mid-animation
