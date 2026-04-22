@@ -40,9 +40,17 @@ const APP_COMMANDS: Record<string, string[][]> = {
         : IS_WIN
             ? [['cmd', '/c', 'start', 'chrome']]
             : [['google-chrome'], ['google-chrome-stable'], ['chromium-browser'], ['chromium']],
+    safari: IS_MAC ? [['open', '-a', 'Safari']] : [],
     terminal: IS_MAC
         ? [['open', '-a', 'Terminal']]
         : [['gnome-terminal'], ['ptyxis'], ['konsole'], ['xfce4-terminal'], ['xterm']],
+    cmd: IS_WIN ? [['cmd', '/c', 'start', '', 'cmd.exe']] : [],
+    powershell: IS_WIN
+        ? [
+            ['cmd', '/c', 'start', '', 'pwsh.exe'],
+            ['cmd', '/c', 'start', '', 'powershell.exe'],
+        ]
+        : [],
     settings: IS_MAC
         ? [['open', '-a', 'System Settings'], ['open', '-a', 'System Preferences']]
         : IS_WIN

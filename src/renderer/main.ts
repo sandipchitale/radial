@@ -8,6 +8,7 @@ declare global {
       launch: (appId: string) => void
       openUrl: (url: string) => void
       openDevTools: () => void
+      platform: NodeJS.Platform
     }
   }
 }
@@ -28,11 +29,34 @@ interface MenuItem {
   inspect?: boolean
 }
 
+const PLATFORM = window.radial.platform
+const IS_MAC = PLATFORM === 'darwin'
+const IS_WIN = PLATFORM === 'win32'
+
+const filesItem: MenuItem = IS_MAC
+  ? { id: 'files', label: 'Finder', icon: 'fa-folder-open', command: 'files' }
+  : IS_WIN
+    ? { id: 'files', label: 'Explorer', icon: 'fa-folder-open', command: 'files' }
+    : { id: 'files', label: 'Files', icon: 'fa-folder-open', command: 'files' }
+
+const terminalItems: MenuItem[] = IS_WIN
+  ? [
+      { id: 'cmd', label: 'Command Prompt', icon: 'fa-terminal', command: 'cmd' },
+      { id: 'powershell', label: 'PowerShell', icon: 'fa-terminal', command: 'powershell' },
+    ]
+  : [{ id: 'terminal', label: 'Terminal', icon: 'fa-terminal', command: 'terminal' }]
+
+const browserItems: MenuItem[] = IS_MAC
+  ? [
+      { id: 'chrome', label: 'Chrome', icon: 'fa-chrome', iconStyle: 'fab', command: 'chrome' },
+      { id: 'safari', label: 'Safari', icon: 'fa-safari', iconStyle: 'fab', command: 'safari' },
+    ]
+  : [{ id: 'chrome', label: 'Chrome', icon: 'fa-chrome', iconStyle: 'fab', command: 'chrome' }]
+
 const ROOT: MenuItem[] = [
-  { id: 'files', label: 'Files', icon: 'fa-folder-open', command: 'files' },
-  { id: 'terminal', label: 'Terminal', icon: 'fa-terminal', command: 'terminal' },
-  { id: 'chrome', label: 'Chrome', icon: 'fa-chrome', iconStyle: 'fab', command: 'chrome' },
-  { id: 'settings', label: 'Settings', icon: 'fa-gear', command: 'settings' },
+  filesItem,
+  ...terminalItems,
+  ...browserItems,
   {
     id: 'google', label: 'Google', icon: 'fa-google', iconStyle: 'fab', children: [
       { id: 'gmail', label: 'Gmail', icon: 'fa-envelope', url: 'https://mail.google.com/' },
@@ -55,8 +79,9 @@ const ROOT: MenuItem[] = [
       { id: 'github', label: 'GitHub', icon: 'fa-github', iconStyle: 'fab', url: 'https://github.com/' },
     ],
   },
-  { id: 'theme', label: 'Theme (light/dark/auto)', icon: 'fa-circle-half-stroke', theme: true },
+  { id: 'settings', label: 'Settings', icon: 'fa-gear', command: 'settings' },
   { id: 'inspect', label: 'Inspect', icon: 'fa-bug', inspect: true },
+  { id: 'theme', label: 'Theme (light/dark/auto)', icon: 'fa-circle-half-stroke', theme: true },
 ]
 
 // ───────── Geometry ─────────
